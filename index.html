@@ -13,11 +13,44 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div id="authModal" class="modal" hidden>
+  <div class="modalCard">
+    <button class="close" data-close="authModal">×</button>
+    <h2 id="authTitle">تسجيل الدخول</h2>
+    <p id="authHint">ادخل بياناتك للوصول إلى حسابك.</p>
+    <form id="authForm">
+      <input id="authName" placeholder="الاسم" autocomplete="name">
+      <input id="authEmail" type="email" placeholder="البريد الإلكتروني" required autocomplete="email">
+      <input id="authPassword" type="password" placeholder="كلمة المرور" required autocomplete="current-password">
+      <button class="btn primary" type="submit">متابعة</button>
+    </form>
+    <button id="toggleAuth" class="textBtn">إنشاء حساب جديد</button>
+  </div>
+</div>
+<div id="adminModal" class="modal" hidden>
+ <div class="modalCard wide">
+  <button class="close" data-close="adminModal">×</button>
+  <h2>لوحة إدارة فرتكه</h2>
+  <div class="adminTabs"><button data-admin-tab="products">المنتجات</button><button data-admin-tab="site">واجهة الموقع</button></div>
+  <div id="adminProducts"></div>
+  <div id="adminSite" hidden>
+    <label>عنوان العرض الرئيسي<input id="heroTitle" type="text"></label>
+    <label>وصف العرض<input id="heroText" type="text"></label>
+    <label>صورة العرض الرئيسي<input id="heroImage" type="file" accept="image/*"></label>
+    <button id="saveSite" class="btn primary">حفظ تعديلات الواجهة</button>
+  </div>
+ </div>
+</div>
 <div class="announcement">🔥 عروض وخصومات جديدة كل يوم — متجر فرتكه</div>
 <header class="header">
   <a class="brand" href="#"><img src="logo.svg" alt="فرتكه"><span><b>فرتكه</b><small>كل ما تحتاجه... في مكان واحد</small></span></a>
   <nav><a href="#home">الرئيسية</a><a href="#categories">الأقسام</a><a href="#products">المنتجات</a><a href="#how">كيف يعمل؟</a></nav>
-  <div class="actions"><button onclick="openSearch()">⌕</button><button onclick="openCart()">🛒<i id="count">0</i></button></div>
+  <div class="actions">
+<button onclick="openSearch()">⌕</button>
+<button id="accountBtn" title="تسجيل الدخول" onclick="openAuth()">👤</button>
+<button id="adminBtn" hidden title="لوحة الإدارة" onclick="openAdmin()">⚙️</button>
+<button onclick="openCart()">🛒<i id="count">0</i></button>
+</div>
 </header>
 
 <main id="home">
@@ -64,24 +97,14 @@
         <label>القسم<select id="aCat"><option>إلكترونيات</option><option>منزل</option><option>أزياء</option><option>أطفال</option><option>رياضة</option></select></label>
         <label>المتجر<select id="aSource"><option>أمازون</option><option>نون</option><option>طلبات</option><option>متجر خارجي</option></select></label>
         <label class="full">رابط الأفليت / رابط الشراء<input id="aUrl" type="url" required placeholder="https://..."></label>
-        <label class="full">صورة المنتج (اختياري)
-<input id="aImageFile" type="file" accept="image/*">
-<small>اختار الصورة مباشرة من الهاتف.</small>
-</label>
+        <label class="full">رابط صورة المنتج (اختياري)<input id="aImage" type="url" placeholder="https://.../product-image.jpg"></label>
       </div>
       <button class="btn primary" type="submit">➕ إضافة المنتج إلى فرتكه</button>
     </form>
   </div>
-  <div class="editorPanel">
-<h3>تعديل المنتجات الموجودة</h3><p>اختار منتجًا لتغيير صورته أو بياناته من الهاتف.</p>
-<div id="editList"></div></div><p class="adminNote">المنتجات التي تضيفها من هذا النموذج تُحفظ محليًا في النسخة التجريبية. عند رفع النسخة التجارية سنضع لوحة إدارة وقاعدة بيانات بحيث تراها من أي جهاز.</p>
+  <p class="adminNote">المنتجات تحفظ في قاعدة بيانات فرتكه، والصور ترفع إلى مخزن الصور على الإنترنت. لوحة الإدارة تظهر للحساب المصرح له فقط.</p>
 </section>
 
-<section id="contact" class="contact section">
-<div class="sectionTitle"><span>تواصل معنا</span><h2>خدمة عملاء فرتكه</h2></div>
-<div class="contactBox"><div><strong>📞 هاتف وواتساب</strong><p>01120811246</p></div>
-<a class="btn primary" href="https://wa.me/201120811246" target="_blank" rel="noopener">💬 تواصل معنا على واتساب</a></div>
-</section>
 <section class="newsletter"><div><span>📣 عروض فرتكه</span><h2>خليك أول واحد يعرف الخصومات</h2></div><form onsubmit="subscribe(event)"><input id="email" type="email" required placeholder="اكتب بريدك الإلكتروني"><button>اشترك</button></form></section>
 </main>
 <footer><div class="footerBrand"><img src="logo.svg"><div><b>فرتكه</b><p>كل ما تحتاجه... في مكان واحد</p></div></div><div><b>روابط</b><a href="#products">المنتجات</a><a href="#categories">الأقسام</a><a href="#how">كيف يعمل؟</a></div><div><b>تواصل</b><a href="#" onclick="alert('أضف رقم واتسابك في ملف script.js')">واتساب</a><a href="#">فيسبوك</a></div></footer>
@@ -92,5 +115,21 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebSite","name":"متجر فرتكه","description":"كل ما تحتاجه... في مكان واحد"}
 </script>
-<script src="script.js"></script>
-</body></html>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script><script src="script.js"></script>
+<div id="adminAddProduct" hidden>
+ <form id="productForm" class="adminForm">
+  <h3>إضافة / تعديل منتج</h3>
+  <input type="hidden" id="editId">
+  <input id="pName" placeholder="اسم المنتج" required>
+  <input id="pPrice" type="number" min="0" placeholder="السعر" required>
+  <input id="pOld" type="number" min="0" placeholder="السعر قبل الخصم">
+  <input id="pCat" placeholder="القسم" required>
+  <select id="pSource"><option>أمازون</option><option>نون</option><option>طلبات</option><option>متجر خارجي</option></select>
+  <input id="pUrl" type="url" placeholder="رابط الأفليت" required>
+  <input id="pImage" type="file" accept="image/*">
+  <textarea id="pDesc" placeholder="وصف المنتج"></textarea>
+  <button class="btn primary" type="submit">حفظ المنتج</button>
+  <button class="btn" type="button" id="cancelEdit">إلغاء</button>
+ </form>
+</div>
+<section class="contact section"><div class="contactBox"><b>خدمة عملاء فرتكه</b><span>01120811246</span><a class="btn primary" href="https://wa.me/201120811246" target="_blank" rel="noopener">واتساب</a></div></section></body></html>
