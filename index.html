@@ -1,135 +1,51 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>فرتكه | كل ما تحتاجه في مكان واحد</title>
-<meta name="description" content="متجر فرتكه - اكتشف أفضل المنتجات والعروض وروابط الشراء من المتاجر المختلفة.">
-<meta name="theme-color" content="#19132f">
-<meta property="og:title" content="متجر فرتكه">
-<meta property="og:description" content="كل ما تحتاجه... في مكان واحد">
-<meta property="og:type" content="website">
-<link rel="icon" href="logo.svg">
-<link rel="stylesheet" href="style.css">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>فرتكه | تسوق أذكى في مكان واحد</title>
+<meta name="description" content="فرتكه - منصة تسوق عربية تجمع المنتجات والعروض والطلبات والتتبع في مكان واحد.">
+<meta name="theme-color" content="#151126"><link rel="icon" href="logo.svg"><link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="authModal" class="modal" hidden>
-  <div class="modalCard">
-    <button class="close" data-close="authModal">×</button>
-    <h2 id="authTitle">تسجيل الدخول</h2>
-    <p id="authHint">ادخل بياناتك للوصول إلى حسابك.</p>
-    <form id="authForm">
-      <input id="authName" placeholder="الاسم" autocomplete="name">
-      <input id="authEmail" type="email" placeholder="البريد الإلكتروني" required autocomplete="email">
-      <input id="authPassword" type="password" placeholder="كلمة المرور" required autocomplete="current-password">
-      <button class="btn primary" type="submit">متابعة</button>
-    </form>
-    <button id="toggleAuth" class="textBtn">إنشاء حساب جديد</button>
-  </div>
-</div>
-<div id="adminModal" class="modal" hidden>
- <div class="modalCard wide">
-  <button class="close" data-close="adminModal">×</button>
-  <h2>لوحة إدارة فرتكه</h2>
-  <div class="adminTabs"><button data-admin-tab="products">المنتجات</button><button data-admin-tab="site">واجهة الموقع</button></div>
-  <div id="adminProducts"></div>
-  <div id="adminSite" hidden>
-    <label>عنوان العرض الرئيسي<input id="heroTitle" type="text"></label>
-    <label>وصف العرض<input id="heroText" type="text"></label>
-    <label>صورة العرض الرئيسي<input id="heroImage" type="file" accept="image/*"></label>
-    <button id="saveSite" class="btn primary">حفظ تعديلات الواجهة</button>
-  </div>
- </div>
-</div>
-<div class="announcement">🔥 عروض وخصومات جديدة كل يوم — متجر فرتكه</div>
+<div class="announcement">🔥 عروض جديدة كل يوم • شحن وتتبع الطلبات من حسابك</div>
 <header class="header">
-  <a class="brand" href="#"><img src="logo.svg" alt="فرتكه"><span><b>فرتكه</b><small>كل ما تحتاجه... في مكان واحد</small></span></a>
-  <nav><a href="#home">الرئيسية</a><a href="#categories">الأقسام</a><a href="#products">المنتجات</a><a href="#how">كيف يعمل؟</a></nav>
-  <div class="actions">
-<button onclick="openSearch()">⌕</button>
-<button id="accountBtn" title="تسجيل الدخول" onclick="openAuth()">👤</button>
-<button id="adminBtn" hidden title="لوحة الإدارة" onclick="openAdmin()">⚙️</button>
-<button onclick="openCart()">🛒<i id="count">0</i></button>
-</div>
+  <a class="brand" href="#home"><img src="logo.svg" alt="فرتكه"><span><b>فرتكه</b><small>كل ما تحتاجه... في مكان واحد</small></span></a>
+  <div class="mainSearch"><span>⌕</span><input id="topSearch" placeholder="ابحث عن منتج، قسم أو متجر..." oninput="quickSearch()"><button onclick="openSearch()">بحث</button></div>
+  <nav><a href="#home">الرئيسية</a><a href="#categories">الأقسام</a><a href="#products">المنتجات</a><a href="#track">تتبع الطلب</a></nav>
+  <div class="actions"><button onclick="openAccount()" title="حسابي">👤</button><button onclick="openCart()" title="السلة">🛒<i id="count">0</i></button><button id="adminBtn" hidden onclick="openAdmin()">⚙️</button></div>
 </header>
 
 <main id="home">
-<section class="hero">
- <div class="heroText">
-  <span class="pill">متجر مصري بتجربة تسوق ذكية</span>
-  <h1>كل اللي محتاجه<br><strong>في مكان واحد.</strong></h1>
-  <p>اكتشف منتجات من متاجر مختلفة، واحصل على رابط الشراء والعروض في مكان واحد.</p>
-  <div class="urlBox"><input id="productUrl" placeholder="الصق رابط المنتج هنا..." inputmode="url"><button onclick="importLink()">فحص الرابط</button></div>
-  <small class="hint">يدعم النموذج التجريبي روابط المتاجر الخارجية. الاستيراد التلقائي الكامل يحتاج API مصرح به.</small>
-  <div class="heroBtns"><a class="btn primary" href="#products">ابدأ التسوق</a><a class="btn ghost" href="#how">كيف يعمل؟</a></div>
- </div>
- <div class="heroVisual">
-   <div class="floating f1">⚡ خصم اليوم</div><div class="phone"><div class="phoneTop">فرتكه <span>🛒</span></div><div class="miniSearch">ابحث عن منتج...</div><div class="miniGrid"><span>🎧<b>سماعة</b><em>1,299 ج</em></span><span>⌚<b>ساعة ذكية</b><em>899 ج</em></span><span>☕<b>ماكينة قهوة</b><em>1,499 ج</em></span><span>👟<b>حذاء رياضي</b><em>599 ج</em></span></div></div>
-   <div class="floating f2">🛍️ نون • طلبات • متاجر أخرى</div>
- </div>
-</section>
+<section class="hero"><div class="heroText"><span class="pill">منصة تسوق مصرية ذكية</span><h1>تسوق، ادفع،<br><strong>وتابع طلبك.</strong></h1><p>فرتكه بتجمع لك المنتجات والعروض في مكان واحد، ومع حسابك تقدر تحفظ المفضلة وتعمل طلب وتتابع الشحنة خطوة بخطوة.</p><div class="heroBtns"><a class="btn primary" href="#products">ابدأ التسوق</a><button class="btn ghost" onclick="openTrack()">تتبع طلبك</button></div><div class="heroStats"><span><b>🔐</b> حساب آمن</span><span><b>💳</b> دفع إلكتروني جاهز</span><span><b>📦</b> تتبع الشحنات</span></div></div><div class="heroVisual"><div class="floating f1">⚡ خصم اليوم</div><div class="phone"><div class="phoneTop">فرتكه <span>🛒</span></div><div class="miniSearch">ابحث عن منتج...</div><div class="miniGrid"><span>🎧<b>سماعة</b><em>1,299 ج</em></span><span>⌚<b>ساعة ذكية</b><em>899 ج</em></span><span>☕<b>ماكينة قهوة</b><em>1,499 ج</em></span><span>👟<b>حذاء رياضي</b><em>599 ج</em></span></div></div><div class="floating f2">📦 طلبك في الطريق</div></div></section>
 
-<section class="trust"><div>🔒 <b>تسوق آمن</b><small>روابط شراء موثوقة</small></div><div>💰 <b>أفضل العروض</b><small>خصومات مستمرة</small></div><div>🔗 <b>روابط متعددة</b><small>في مكان واحد</small></div><div>📱 <b>مناسب للموبايل</b><small>تجربة سريعة</small></div></section>
+<section class="trust"><div>🔒<b>حسابات آمنة</b><small>تسجيل ودخول عبر Supabase</small></div><div>💳<b>الدفع بالبطاقة</b><small>عبر بوابة دفع خارجية آمنة</small></div><div>📦<b>تتبع الطلب</b><small>خط زمني لحالة الشحنة</small></div><div>❤️<b>مفضلة وعروض</b><small>احفظ منتجاتك المفضلة</small></div></section>
 
 <section id="categories" class="section"><div class="sectionTitle"><span>اختار اللي يناسبك</span><h2>تسوق حسب القسم</h2></div><div class="categoryGrid" id="categoriesGrid"></div></section>
 
-<section id="products" class="section productsSec">
-<div class="sectionTitle row"><div><span>مختارات فرتكه</span><h2>أحدث المنتجات</h2></div><select id="sort" onchange="renderProducts()"><option value="default">ترتيب المنتجات</option><option value="low">الأقل سعرًا</option><option value="high">الأعلى سعرًا</option></select></div>
-<div class="chips" id="chips"></div><div class="grid" id="productsGrid"></div>
-</section>
+<section id="products" class="section productsSec"><div class="sectionTitle row"><div><span>مختارات فرتكه</span><h2>أحدث المنتجات</h2></div><div class="sorts"><select id="sort" onchange="renderProducts()"><option value="default">ترتيب المنتجات</option><option value="low">الأقل سعرًا</option><option value="high">الأعلى سعرًا</option><option value="discount">أعلى خصم</option></select><button class="filterBtn" onclick="toggleFilters()">☷ فلاتر</button></div></div><div id="filters" class="filters" hidden><label>من <input id="minPrice" type="number" min="0" oninput="renderProducts()"></label><label>إلى <input id="maxPrice" type="number" min="0" oninput="renderProducts()"></label><label>المتجر<select id="storeFilter" onchange="renderProducts()"><option value="">كل المتاجر</option></select></label><label class="check"><input id="saleOnly" type="checkbox" onchange="renderProducts()"> عروض فقط</label></div><div class="chips" id="chips"></div><div class="grid" id="productsGrid"></div><button id="moreBtn" class="btn more" onclick="showMore()" hidden>عرض المزيد</button></section>
 
-<section id="how" class="how"><div class="sectionTitle"><span>بسيطة وسريعة</span><h2>إزاي فرتكه بتشتغل؟</h2></div><div class="steps"><div><b>01</b><h3>اختار المنتج</h3><p>تصفح المنتجات أو استخدم البحث.</p></div><div><b>02</b><h3>افتح رابط الشراء</h3><p>اضغط شراء الآن للوصول للمتجر الأصلي.</p></div><div><b>03</b><h3>استمتع بالعرض</h3><p>استخدم رابطك أو كود الخصم إذا كان متاحًا.</p></div></div></section>
+<section id="track" class="trackSection"><div class="trackBox"><div><span class="pill">تتبع الشحنة</span><h2>اعرف طلبك وصل لفين 📦</h2><p>اكتب رقم الطلب أو رقم التتبع وشوف آخر حالة للشحنة.</p></div><form onsubmit="trackOrder(event)"><input id="trackingInput" placeholder="مثال: FRK-2026-000123" required><button class="btn primary">تتبع الطلب</button></form><div id="trackingResult"></div></div></section>
 
-
-<section id="admin" class="admin section">
-  <div class="sectionTitle"><span>إدارة فرتكه</span><h2>إضافة منتج أفليت</h2></div>
-  <div class="adminBox">
-    <div class="adminIntro">
-      <div class="adminIcon">🔗</div>
-      <h3>أضف رابط الأفليت وسيظهر المنتج في المتجر</h3>
-      <p>اكتب اسم المنتج والسعر، والصق رابط الأفليت. ولعرض صورة المنتج استخدم رابط الصورة المسموح به من مصدرها أو من تكامل رسمي.</p>
-      <div class="notice">💡 في أمازون، يمكنك إنشاء رابط الشراكة من SiteStripe ثم وضعه هنا. أما جلب بيانات المنتج تلقائيًا فيحتاج تكاملًا رسميًا مثل Product Advertising API عند توفر الأهلية.</div>
-    </div>
-    <form id="adminForm" onsubmit="addAffiliateProduct(event)">
-      <div class="formGrid">
-        <label>اسم المنتج<input id="aName" required placeholder="مثال: سماعة بلوتوث"></label>
-        <label>السعر بالجنيه<input id="aPrice" type="number" min="0" required placeholder="1299"></label>
-        <label>القسم<select id="aCat"><option>إلكترونيات</option><option>منزل</option><option>أزياء</option><option>أطفال</option><option>رياضة</option></select></label>
-        <label>المتجر<select id="aSource"><option>أمازون</option><option>نون</option><option>طلبات</option><option>متجر خارجي</option></select></label>
-        <label class="full">رابط الأفليت / رابط الشراء<input id="aUrl" type="url" required placeholder="https://..."></label>
-        <label class="full">رابط صورة المنتج (اختياري)<input id="aImage" type="url" placeholder="https://.../product-image.jpg"></label>
-      </div>
-      <button class="btn primary" type="submit">➕ إضافة المنتج إلى فرتكه</button>
-    </form>
-  </div>
-  <p class="adminNote">المنتجات تحفظ في قاعدة بيانات فرتكه، والصور ترفع إلى مخزن الصور على الإنترنت. لوحة الإدارة تظهر للحساب المصرح له فقط.</p>
-</section>
+<section class="how"><div class="sectionTitle"><span>من أول الطلب لحد الاستلام</span><h2>تجربة شراء كاملة</h2></div><div class="steps"><div><b>01</b><h3>اختار المنتج</h3><p>تصفح، ابحث، قارن، وأضف للمفضلة أو السلة.</p></div><div><b>02</b><h3>اعمل حساب واطلب</h3><p>احفظ بياناتك وعنوانك واختر طريقة الدفع المناسبة.</p></div><div><b>03</b><h3>ادفع بأمان</h3><p>الدفع بالبطاقة يتم عبر بوابة دفع آمنة بدون تخزين بيانات البطاقة على فرتكه.</p></div><div><b>04</b><h3>تابع الشحنة</h3><p>من حسابك أو برقم التتبع شوف حالة الطلب خطوة بخطوة.</p></div></div></section>
 
 <section class="newsletter"><div><span>📣 عروض فرتكه</span><h2>خليك أول واحد يعرف الخصومات</h2></div><form onsubmit="subscribe(event)"><input id="email" type="email" required placeholder="اكتب بريدك الإلكتروني"><button>اشترك</button></form></section>
 </main>
-<footer><div class="footerBrand"><img src="logo.svg"><div><b>فرتكه</b><p>كل ما تحتاجه... في مكان واحد</p></div></div><div><b>روابط</b><a href="#products">المنتجات</a><a href="#categories">الأقسام</a><a href="#how">كيف يعمل؟</a></div><div><b>تواصل</b><a href="#" onclick="alert('أضف رقم واتسابك في ملف script.js')">واتساب</a><a href="#">فيسبوك</a></div></footer>
 
-<div id="searchModal" class="modal"><div class="modalBox"><button class="close" onclick="closeSearch()">×</button><h2>ابحث في فرتكه</h2><input id="searchInput" oninput="searchProducts()" placeholder="مثلاً: سماعة، ساعة..."><div id="searchResults"></div></div></div>
-<div id="cartDrawer" class="drawer"><div class="drawerHead"><h2>سلة المشتريات</h2><button onclick="closeCart()">×</button></div><div id="cartItems"></div><div class="cartBottom"><p>الإجمالي <strong id="total">0</strong> جنيه</p><button class="btn primary" onclick="checkout()">إتمام الطلب</button></div></div><div id="overlay" onclick="closeCart()"></div>
+<footer><div class="footerBrand"><img src="logo.svg"><div><b>فرتكه</b><p>كل ما تحتاجه... في مكان واحد</p></div></div><div><b>روابط</b><a href="#products">المنتجات</a><a href="#categories">الأقسام</a><a href="#track">تتبع الطلب</a></div><div><b>خدمة العملاء</b><a href="https://wa.me/201120811246" target="_blank" rel="noopener">واتساب</a><a href="tel:01120811246">01120811246</a></div></footer>
+
+<!-- Search -->
+<div id="searchModal" class="modal" hidden><div class="modalCard wide"><button class="close" onclick="closeSearch()">×</button><h2>ابحث في فرتكه</h2><input id="searchInput" class="bigInput" oninput="searchProducts()" placeholder="مثلاً: سماعة، ساعة، حذاء..."><div id="searchResults"></div></div></div>
+<!-- Account -->
+<div id="accountModal" class="modal" hidden><div class="modalCard"><button class="close" onclick="closeModal('accountModal')">×</button><div id="accountView"></div></div></div>
+<!-- Checkout -->
+<div id="checkoutModal" class="modal" hidden><div class="modalCard wide"><button class="close" onclick="closeModal('checkoutModal')">×</button><div id="checkoutView"></div></div></div>
+<!-- Track -->
+<div id="trackModal" class="modal" hidden><div class="modalCard wide"><button class="close" onclick="closeModal('trackModal')">×</button><h2>تتبع الطلب</h2><form onsubmit="trackOrder(event,true)" class="trackForm"><input id="trackingInputModal" placeholder="رقم الطلب أو رقم التتبع" required><button class="btn primary">بحث</button></form><div id="trackingResultModal"></div></div></div>
+<!-- Admin -->
+<div id="adminModal" class="modal" hidden><div class="modalCard xwide"><button class="close" onclick="closeModal('adminModal')">×</button><h2>لوحة تحكم فرتكه</h2><div class="adminTabs"><button class="tab active" data-tab="products" onclick="adminTab('products')">المنتجات</button><button class="tab" data-tab="orders" onclick="adminTab('orders')">الطلبات</button><button class="tab" data-tab="site" onclick="adminTab('site')">واجهة الموقع</button></div><div id="adminProducts"></div><div id="adminOrders" hidden></div><div id="adminSite" hidden><div class="formGrid"><label>عنوان الواجهة<input id="heroTitleAdmin"></label><label>وصف الواجهة<input id="heroTextAdmin"></label><label>صورة رئيسية<input id="heroImageAdmin" type="url"></label></div><button class="btn primary" onclick="saveSiteSettings()">حفظ</button></div></div></div>
+<!-- Cart -->
+<div id="cartDrawer" class="drawer"><div class="drawerHead"><h2>سلة المشتريات</h2><button onclick="closeCart()">×</button></div><div id="cartItems"></div><div class="cartBottom"><div class="couponLine"><input id="couponInput" placeholder="كود الخصم"><button onclick="applyCoupon()">تطبيق</button></div><p>الإجمالي <strong id="total">0</strong> جنيه</p><button class="btn primary" onclick="checkout()">إتمام الطلب</button></div></div><div id="overlay" onclick="closeCart()"></div>
+<div id="productModal" class="modal" hidden><div class="modalCard wide"><button class="close" onclick="closeModal('productModal')">×</button><div id="productDetail"></div></div></div>
 <div id="toast"></div>
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebSite","name":"متجر فرتكه","description":"كل ما تحتاجه... في مكان واحد"}
-</script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script><script src="script.js"></script>
-<div id="adminAddProduct" hidden>
- <form id="productForm" class="adminForm">
-  <h3>إضافة / تعديل منتج</h3>
-  <input type="hidden" id="editId">
-  <input id="pName" placeholder="اسم المنتج" required>
-  <input id="pPrice" type="number" min="0" placeholder="السعر" required>
-  <input id="pOld" type="number" min="0" placeholder="السعر قبل الخصم">
-  <input id="pCat" placeholder="القسم" required>
-  <select id="pSource"><option>أمازون</option><option>نون</option><option>طلبات</option><option>متجر خارجي</option></select>
-  <input id="pUrl" type="url" placeholder="رابط الأفليت" required>
-  <input id="pImage" type="file" accept="image/*">
-  <textarea id="pDesc" placeholder="وصف المنتج"></textarea>
-  <button class="btn primary" type="submit">حفظ المنتج</button>
-  <button class="btn" type="button" id="cancelEdit">إلغاء</button>
- </form>
-</div>
-<section class="contact section"><div class="contactBox"><b>خدمة عملاء فرتكه</b><span>01120811246</span><a class="btn primary" href="https://wa.me/201120811246" target="_blank" rel="noopener">واتساب</a></div></section></body></html>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script><script src="payment-config.js"></script><script src="script.js"></script>
+</body></html>
