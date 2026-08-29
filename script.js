@@ -17,13 +17,29 @@ function escapeHtml(x){return String(x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":
 function addAffiliateProduct(e){
  e.preventDefault();
  const name=document.getElementById("aName").value.trim(),price=Number(document.getElementById("aPrice").value);
- const cat=document.getElementById("aCat").value,source=document.getElementById("aSource").value,url=document.getElementById("aUrl").value.trim(),image=document.getElementById("aImage").value.trim();
+ const cat=document.getElementById("aCat").value,source=document.getElementById("aSource").value,url=document.getElementById("aUrl").value.trim();
+ const file=document.getElementById("aImageFile").files[0];
  if(!name||!price||!url){toast("أكمل اسم المنتج والسعر والرابط");return}
- const product={id:Date.now(),name,price,old:price,cat,source,emoji:"🛍️",url,image};
+ const save=(image)=>{const product={id:Date.now(),name,price,old:price,cat,source,emoji:"🛍️",url,image:image||""};
  products.unshift(product);localStorage.setItem("fartaka_products",JSON.stringify(products));
- e.target.reset();activeCat="الكل";renderProducts();toast("تمت إضافة المنتج إلى متجر فرتكه");
- document.getElementById("products").scrollIntoView({behavior:"smooth"});
+ e.target.reset();activeCat="الكل";renderProducts();renderEditor();toast("تمت إضافة المنتج إلى متجر فرتكه");
+ document.getElementById("products").scrollIntoView({behavior:"smooth"});}
+ if(file){const reader=new FileReader();reader.onload=()=>save(reader.result);reader.readAsDataURL(file)}else save("");
 }
+
+function renderEditor(){
+ const box=document.getElementById("editList"); if(!box)return;
+ box.innerHTML=products.map((p,i)=>`<div class="editRow">
+ ${p.image?`<img src="${p.image}" alt="">`:`<span>🛍️</span>`}
+ <strong>${escapeHtml(p.name)}</strong>
+ <input type="file" accept="image/*" onchange="replaceProductImage(${i},this.files[0])">
+ <button onclick="deleteProduct(${i})">حذف</button></div>`).join("");
+}
+function replaceProductImage(i,file){
+ if(!file)return; const r=new FileReader(); r.onload=()=>{products[i].image=r.result;localStorage.setItem("fartaka_products",JSON.stringify(products));renderProducts();renderEditor();toast("تم تغيير الصورة");}; r.readAsDataURL(file);
+}
+function deleteProduct(i){if(confirm("هل تريد حذف المنتج؟")){products.splice(i,1);localStorage.setItem("fartaka_products",JSON.stringify(products));renderProducts();renderEditor();toast("تم حذف المنتج");}}
+
 function init(){
  document.getElementById("categoriesGrid").innerHTML=cats.slice(1).map(c=>`<button class="category" onclick="filterCat('${c[0]}')"><div class="ico">${c[1]}</div><b>${c[0]}</b></button>`).join("");
  document.getElementById("chips").innerHTML=cats.map(c=>`<button class="chip ${c[0]==="الكل"?"active":""}" onclick="filterCat('${c[0]}')">${c[1]} ${c[0]}</button>`).join("");
@@ -51,3 +67,5 @@ function checkout(){if(!cart.length){toast("السلة فارغة");return}toast
 function subscribe(e){e.preventDefault();toast("تم تسجيل بريدك للعروض التجريبية");e.target.reset()}
 function toast(t){let x=document.getElementById("toast");x.textContent=t;x.classList.add("show");setTimeout(()=>x.classList.remove("show"),2800)}
 init();
+
+document.addEventListener("DOMContentLoaded",()=>setTimeout(renderEditor,50));
