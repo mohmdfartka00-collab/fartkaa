@@ -189,3 +189,130 @@ grant execute on function public.create_order_with_items(jsonb,jsonb) to authent
 
 -- مثال كوبون تجريبي:
 -- insert into public.coupons(code,percent,expires_at) values('WELCOME10',10,now()+interval '30 days') on conflict(code) do nothing;
+
+-- =========================
+-- التخزين: صور المنتجات وواجهة الموقع
+-- =========================
+insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types)
+values ('product-images','product-images',true,5242880,array['image/png','image/jpeg','image/webp'])
+on conflict (id) do update set public=true,file_size_limit=5242880,allowed_mime_types=array['image/png','image/jpeg','image/webp'];
+
+drop policy if exists "public read product images" on storage.objects;
+drop policy if exists "admin upload product images v2" on storage.objects;
+drop policy if exists "admin update product images v2" on storage.objects;
+drop policy if exists "admin delete product images v2" on storage.objects;
+
+create policy "public read product images" on storage.objects
+for select to anon,authenticated
+using (bucket_id='product-images');
+
+create policy "admin upload product images v2" on storage.objects
+for insert to authenticated
+with check (
+  bucket_id='product-images' and
+  exists(select 1 from public.profiles p where p.id=auth.uid() and p.role='admin')
+);
+
+create policy "admin update product images v2" on storage.objects
+for update to authenticated
+using (
+  bucket_id='product-images' and
+  exists(select 1 from public.profiles p where p.id=auth.uid() and p.role='admin')
+)
+with check (
+  bucket_id='product-images' and
+  exists(select 1 from public.profiles p where p.id=auth.uid() and p.role='admin')
+);
+
+create policy "admin delete product images v2" on storage.objects
+for delete to authenticated
+using (
+  bucket_id='product-images' and
+  exists(select 1 from public.profiles p where p.id=auth.uid() and p.role='admin')
+);
+
+-- العميل يقدر يشوف عمليات الدفع الخاصة بطلباته فقط.
+drop policy if exists "customers read own payment transactions" on public.payment_transactions;
+create policy "customers read own payment transactions" on public.payment_transactions
+for select to authenticated
+using (exists(select 1 from public.orders o where o.id=order_id and (o.user_id=auth.uid() or exists(select 1 from public.profiles p where p.id=auth.uid() and p.role='admin'))));
+
+-- نسخة أكثر أمانًا لإنشاء الطلب: الأسعار والإجمالي تُحسب من قاعدة البيانات، وليس من المتصفح.
+revoke execute on function public.create_order_with_items(jsonb,jsonb) from authenticated;
+drop function if exists public.create_order_secure(jsonb,jsonb,text);
+create or replace function public.create_order_secure(p_order jsonb,p_items jsonb,p_coupon_code text default null)
+returns table(id uuid,order_number text,tracking_number text,total numeric,status text)
+language plpgsql security definer set search_path=public
+as $$
+declare
+  v_order_id uuid;
+  v_order_number text;
+  v_tracking text;
+  v_item jsonb;
+  v_user uuid:=auth.uid();
+  v_subtotal numeric:=0;
+  v_discount numeric:=0;
+  v_total numeric:=0;
+  v_product_id bigint;
+  v_qty integer;
+  v_price numeric;
+  v_stock integer;
+  v_coupon record;
+begin
+  if v_user is null then raise exception 'يجب تسجيل الدخول أولًا'; end if;
+  if coalesce(jsonb_array_length(p_items),0)=0 then raise exception 'السلة فارغة'; end if;
+
+  for v_item in select * from jsonb_array_elements(p_items) loop
+    v_product_id:=(v_item->>'product_id')::bigint;
+    v_qty:=(v_item->>'quantity')::integer;
+    if v_qty is null or v_qty < 1 or v_qty > 99 then raise exception 'كمية غير صالحة'; end if;
+    select price,stock into v_price,v_stock from public.products where id=v_product_id for update;
+    if not found then raise exception 'المنتج غير موجود'; end if;
+    if v_stock < v_qty then raise exception 'المخزون غير كافٍ للمنتج %',(v_item->>'name'); end if;
+    v_subtotal:=v_subtotal+(v_price*v_qty);
+  end loop;
+
+  if nullif(trim(coalesce(p_coupon_code,'')),'') is not null then
+    select * into v_coupon from public.coupons
+    where code=upper(trim(p_coupon_code)) and active=true
+      and (expires_at is null or expires_at>now())
+      and (max_uses is null or uses<max_uses)
+    for update;
+    if not found then raise exception 'كود الخصم غير صالح أو منتهي'; end if;
+    v_discount:=round(v_subtotal*(v_coupon.percent/100.0),2);
+    update public.coupons set uses=uses+1 where id=v_coupon.id;
+  end if;
+
+  v_total:=greatest(0,v_subtotal-v_discount);
+  v_order_number:='FRK-'||to_char(now(),'YYYYMMDD')||'-'||upper(substr(replace(gen_random_uuid()::text,'-',''),1,6));
+  v_tracking:='FRKTRK-'||upper(substr(replace(gen_random_uuid()::text,'-',''),1,10));
+
+  insert into public.orders(order_number,tracking_number,user_id,subtotal,discount,total,status,payment_status,payment_method,shipping_name,shipping_phone,shipping_address,shipping_city,customer_note)
+  values(v_order_number,v_tracking,v_user,v_subtotal,v_discount,v_total,coalesce(p_order->>'status','pending_payment'),'pending',coalesce(p_order->>'payment_method','card'),coalesce(p_order->>'shipping_name',''),coalesce(p_order->>'shipping_phone',''),coalesce(p_order->>'shipping_address',''),p_order->>'shipping_city',p_order->>'customer_note') returning orders.id into v_order_id;
+
+  for v_item in select * from jsonb_array_elements(p_items) loop
+    v_product_id:=(v_item->>'product_id')::bigint;
+    v_qty:=(v_item->>'quantity')::integer;
+    select price into v_price from public.products where id=v_product_id;
+    insert into public.order_items(order_id,product_id,product_name,quantity,unit_price)
+    values(v_order_id,v_product_id,coalesce(v_item->>'name','منتج'),v_qty,v_price);
+    update public.products set stock=stock-v_qty where id=v_product_id;
+  end loop;
+
+  insert into public.shipping_events(order_id,status,note) values(v_order_id,'pending_payment','تم إنشاء الطلب');
+  return query select o.id,o.order_number,o.tracking_number,o.total,o.status from public.orders o where o.id=v_order_id;
+end; $$;
+revoke all on function public.create_order_secure(jsonb,jsonb,text) from public;
+grant execute on function public.create_order_secure(jsonb,jsonb,text) to authenticated;
+
+-- صلاحيات ملف العميل: العميل يقرأ/ينشئ/يعدل بياناته الأساسية فقط، ولا يستطيع رفع نفسه لمدير.
+alter table public.profiles enable row level security;
+drop policy if exists "users read own profile" on public.profiles;
+drop policy if exists "users insert own customer profile" on public.profiles;
+drop policy if exists "users update own customer profile" on public.profiles;
+create policy "users read own profile" on public.profiles
+for select to authenticated using (id=auth.uid());
+create policy "users insert own customer profile" on public.profiles
+for insert to authenticated with check (id=auth.uid() and coalesce(role,'customer')='customer');
+create policy "users update own customer profile" on public.profiles
+for update to authenticated using (id=auth.uid()) with check (id=auth.uid() and role='customer');
