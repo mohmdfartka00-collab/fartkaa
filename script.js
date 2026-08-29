@@ -57,8 +57,8 @@ function removeCart(i){cart.splice(i,1);localStorage.setItem("fartaka_cart",JSON
 function openCart(){document.getElementById("cartDrawer")?.classList.add("open");document.getElementById("overlay")?.classList.add("show")}
 function closeCart(){document.getElementById("cartDrawer")?.classList.remove("open");document.getElementById("overlay")?.classList.remove("show")}
 function buy(id){const p=products.find(x=>x.id===id);if(p?.url&&p.url!=="#")window.open(p.url,"_blank","noopener");else toast("أضف رابط الشراء من لوحة الإدارة")}
-function openSearch(){document.getElementById("searchModal")?.classList.add("show");document.getElementById("searchInput")?.focus()}
-function closeSearch(){document.getElementById("searchModal")?.classList.remove("show")}
+function openSearch(){const m=document.getElementById("searchModal");if(m){m.hidden=false;m.classList.add("show");document.getElementById("searchInput")?.focus()}}
+function closeSearch(){const m=document.getElementById("searchModal");if(m){m.classList.remove("show");m.hidden=true}}
 function searchProducts(){const q=document.getElementById("searchInput").value.trim().toLowerCase();const list=products.filter(p=>(p.name+" "+p.cat+" "+p.source).toLowerCase().includes(q));document.getElementById("searchResults").innerHTML=list.map(p=>`<div class="result"><span>🛍️ ${escapeHtml(p.name)}</span><button onclick="closeSearch();filterCat('${escapeHtml(p.cat)}')">عرض</button></div>`).join("")||"<p>مفيش نتائج مطابقة.</p>"}
 function importLink(){const u=document.getElementById("productUrl")?.value.trim();if(!u){toast("الصق رابط المنتج أولاً");return}try{new URL(u)}catch(e){toast("الرابط غير صحيح");return}toast("تم فحص الرابط. أضف المنتج من لوحة الإدارة")}
 function checkout(){if(!cart.length){toast("السلة فارغة");return}toast("السلة جاهزة للشراء من المتاجر الخارجية")}
