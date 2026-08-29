@@ -1,0 +1,7 @@
+{
+  "site": {"name":"متجر فرتكه","domain":"https://YOUR-DOMAIN.example"},
+  "google": {"search_console_property":"YOUR-DOMAIN","merchant_center_account":"YOUR-MERCHANT-ID"},
+  "amazon": {"marketplace":"EG","partner_tag":"YOUR_PARTNER_TAG","access_key":"SET_ON_SERVER_ONLY","secret_key":"SET_ON_SERVER_ONLY"},
+  "noon": {"affiliate_links":"PASTE_YOUR_NOON_AFFILIATE_LINKS_HERE"},
+  "talabat": {"affiliate_or_authorized_links":"PASTE_AUTHORIZED_LINKS_HERE"}
+}
