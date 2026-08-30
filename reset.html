@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><title>فرتكه | تغيير كلمة المرور</title><link rel="icon" href="logo.svg?v=9"><link rel="stylesheet" href="style.css?v=9"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><title>فرتكه | تغيير كلمة المرور</title><link rel="icon" href="logo.svg?v=20260830v10"><link rel="stylesheet" href="style.css?v=9"></head>
 <body>
 <main class="resetPage"><section class="modalCard resetCard">
-<div class="resetBrand"><img id="resetLogo" src="logo.svg?v=9" alt="فرتكه"><h1>تغيير كلمة المرور</h1><p class="muted">وصلنا من رسالة فرتكه. اكتب كلمة المرور الجديدة مرتين.</p></div>
+<div class="resetBrand"><img id="resetLogo" src="logo.svg?v=20260830v10" alt="فرتكه"><h1>تغيير كلمة المرور</h1><p class="muted">وصلنا من رسالة فرتكه. اكتب كلمة المرور الجديدة مرتين.</p></div>
 <div id="status" class="authStatus">جاري التحقق من رابط الاستعادة...</div>
 <form id="resetForm" hidden><label>كلمة المرور الجديدة<input id="newPassword" type="password" minlength="6" autocomplete="new-password" placeholder="6 أحرف على الأقل" required></label><label>تأكيد كلمة المرور<input id="confirmPassword" type="password" minlength="6" autocomplete="new-password" placeholder="أعد كتابة كلمة المرور" required></label><button class="primary full" type="submit">تغيير كلمة المرور</button></form>
 <a href="./" class="textBtn resetBack">العودة إلى فرتكه</a>
@@ -11,25 +11,49 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script>
 <script>
 const statusEl=document.getElementById('status'),form=document.getElementById('resetForm'),cfg=window.FARTAKA_SUPABASE_CONFIG||{};
-let sb=null, recoveryReady=false;
-if(window.supabase&&cfg.supabase_url&&cfg.supabase_publishable_key){sb=window.supabase.createClient(cfg.supabase_url,cfg.supabase_publishable_key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'implicit'}})}
+let sb=null,recoveryReady=false;
+if(window.supabase&&cfg.supabase_url&&cfg.supabase_publishable_key){
+  sb=window.supabase.createClient(cfg.supabase_url,cfg.supabase_publishable_key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'pkce'}})
+}
 function setStatus(t,ok=false){statusEl.textContent=t;statusEl.className='authStatus '+(ok?'ok':'')}
-function showForm(){recoveryReady=true;form.hidden=false;setStatus('الرابط صالح. اكتب كلمة المرور الجديدة.',true);document.getElementById('newPassword').focus()}
+function showForm(){recoveryReady=true;form.hidden=false;setStatus('الرابط صالح. اكتب كلمة المرور الجديدة.',true);setTimeout(()=>document.getElementById('newPassword').focus(),50)}
 async function boot(){
  if(!sb){setStatus('الموقع غير مربوط بـ Supabase.');return}
- sb.auth.onAuthStateChange(async(event,session)=>{if(event==='PASSWORD_RECOVERY'&&session)showForm();});
+ sb.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'&&session)showForm()});
  try{
-   const url=new URL(window.location.href);
-   const hash=new URLSearchParams(url.hash.replace(/^#/,'').replace(/^\?/,'').trim());
-   const code=url.searchParams.get('code');
-   const type=hash.get('type')||url.searchParams.get('type');
-   const access=hash.get('access_token');
-   const refresh=hash.get('refresh_token');
-   if(code){const {data,error}=await sb.auth.exchangeCodeForSession(code);if(error)throw error;if(data.session)showForm();}
-   else if(access&&refresh){const {data,error}=await sb.auth.setSession({access_token:access,refresh_token:refresh});if(error)throw error;if(data.session)showForm();}
-   else {const {data,error}=await sb.auth.getSession();if(error)throw error;if(data.session)showForm();else if(type==='recovery')setStatus('الرابط وصل لكن جلسة الاستعادة لم تُفتح. اطلب رابطًا جديدًا.');else setStatus('الرابط غير صالح أو انتهت صلاحيته. اطلب رابطًا جديدًا.');}
+   const u=new URL(location.href);
+   const hashParams=new URLSearchParams(u.hash.replace(/^#/,'').replace(/^\?/,'').trim());
+   const code=u.searchParams.get('code');
+   const type=hashParams.get('type')||u.searchParams.get('type');
+   const access=hashParams.get('access_token'),refresh=hashParams.get('refresh_token');
+   if(code){
+     const r=await sb.auth.exchangeCodeForSession(code);
+     if(r.error) throw r.error;
+     if(r.data?.session) showForm();
+   } else if(access&&refresh){
+     const r=await sb.auth.setSession({access_token:access,refresh_token:refresh});
+     if(r.error) throw r.error;
+     if(r.data?.session) showForm();
+   } else {
+     const r=await sb.auth.getSession();
+     if(r.error) throw r.error;
+     if(r.data?.session) showForm();
+     else setStatus(type==='recovery'?'الرابط وصل لكن جلسة الاستعادة لم تُفتح. اطلب رسالة جديدة من الموقع.':'الرابط غير صالح أو انتهت صلاحيته. اطلب رسالة جديدة.');
+   }
  }catch(e){console.error(e);setStatus('تعذر فتح رابط تغيير كلمة المرور: '+(e.message||'خطأ غير معروف'));form.hidden=true}
 }
-form.addEventListener('submit',async e=>{e.preventDefault();if(!recoveryReady){setStatus('الرابط غير جاهز بعد.');return}const a=document.getElementById('newPassword').value,b=document.getElementById('confirmPassword').value;if(a!==b){setStatus('كلمتا المرور غير متطابقتين.');return}if(a.length<6){setStatus('كلمة المرور يجب أن تكون 6 أحرف على الأقل.');return}setStatus('جاري تغيير كلمة المرور...');const {error}=await sb.auth.updateUser({password:a});if(error){setStatus('تعذر تغيير كلمة المرور: '+error.message);return}setStatus('تم تغيير كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول.',true);form.hidden=true;setTimeout(()=>location.href='./',1400)});
+form.addEventListener('submit',async e=>{
+ e.preventDefault();
+ if(!recoveryReady){setStatus('الرابط غير جاهز بعد.');return}
+ const a=document.getElementById('newPassword').value,b=document.getElementById('confirmPassword').value;
+ if(a!==b){setStatus('كلمتا المرور غير متطابقتين.');return}
+ if(a.length<6){setStatus('كلمة المرور يجب أن تكون 6 أحرف على الأقل.');return}
+ setStatus('جاري تغيير كلمة المرور...');
+ const {error}=await sb.auth.updateUser({password:a});
+ if(error){setStatus('تعذر تغيير كلمة المرور: '+error.message);return}
+ form.hidden=true;setStatus('تم تغيير كلمة المرور بنجاح. يمكنك الآن تسجيل الدخول.',true);
+ setTimeout(()=>location.href='./',1400)
+});
 boot();
+</script>
 </script></body></html>
