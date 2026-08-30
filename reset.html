@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><title>فرتكه | تغيير كلمة المرور</title><link rel="icon" href="logo.svg?v=20260830v10"><link rel="stylesheet" href="style.css?v=9"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><title>فرتكه | تغيير كلمة المرور</title><link rel="icon" href="logo.svg?v=20260830v11"><link rel="stylesheet" href="style.css?v=9"></head>
 <body>
 <main class="resetPage"><section class="modalCard resetCard">
-<div class="resetBrand"><img id="resetLogo" src="logo.svg?v=20260830v10" alt="فرتكه"><h1>تغيير كلمة المرور</h1><p class="muted">وصلنا من رسالة فرتكه. اكتب كلمة المرور الجديدة مرتين.</p></div>
+<div class="resetBrand"><img id="resetLogo" src="logo.svg?v=20260830v11" alt="فرتكه"><h1>تغيير كلمة المرور</h1><p class="muted">وصلنا من رسالة فرتكه. اكتب كلمة المرور الجديدة مرتين.</p></div>
 <div id="status" class="authStatus">جاري التحقق من رابط الاستعادة...</div>
 <form id="resetForm" hidden><label>كلمة المرور الجديدة<input id="newPassword" type="password" minlength="6" autocomplete="new-password" placeholder="6 أحرف على الأقل" required></label><label>تأكيد كلمة المرور<input id="confirmPassword" type="password" minlength="6" autocomplete="new-password" placeholder="أعد كتابة كلمة المرور" required></label><button class="primary full" type="submit">تغيير كلمة المرور</button></form>
 <a href="./" class="textBtn resetBack">العودة إلى فرتكه</a>
@@ -27,6 +27,7 @@ async function boot(){
    const type=hashParams.get('type')||u.searchParams.get('type');
    const access=hashParams.get('access_token'),refresh=hashParams.get('refresh_token');
    if(code){
+     // V11 static-site flow: PKCE is intentionally not forced. If a code is present, try the exchange first.
      const r=await sb.auth.exchangeCodeForSession(code);
      if(r.error) throw r.error;
      if(r.data?.session) showForm();
