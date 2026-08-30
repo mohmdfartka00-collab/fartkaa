@@ -13,3 +13,12 @@
 
 ## الدفع
 الدفع الحقيقي يحتاج مفاتيح بوابة الدفع السرية داخل Supabase Edge Functions Secrets، وليس داخل ملفات الموقع.
+
+## إعداد إعادة تعيين كلمة المرور في GitHub Pages
+اجعل Site URL:
+https://mohmdfartka00-collab.github.io/fartkaa/
+
+وأضف Redirect URL التالي:
+https://mohmdfartka00-collab.github.io/fartkaa/reset.html
+
+صفحة reset.html مخصصة لتغيير كلمة المرور بعد فتح رابط البريد.
