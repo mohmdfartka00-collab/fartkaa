@@ -316,3 +316,15 @@ create policy "users insert own customer profile" on public.profiles
 for insert to authenticated with check (id=auth.uid() and coalesce(role,'customer')='customer');
 create policy "users update own customer profile" on public.profiles
 for update to authenticated using (id=auth.uid()) with check (id=auth.uid() and role='customer');
+
+
+-- تتبع ضغطات روابط الأفليت (اختياري)
+create table if not exists public.affiliate_clicks (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete set null,
+  product_id bigint references public.products(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+alter table public.affiliate_clicks enable row level security;
+create policy "users can create own affiliate clicks" on public.affiliate_clicks for insert to authenticated with check (auth.uid() = user_id);
+create policy "admins can view affiliate clicks" on public.affiliate_clicks for select to authenticated using (exists(select 1 from public.profiles p where p.id=auth.uid() and p.role='admin'));

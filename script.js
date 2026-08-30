@@ -7,12 +7,38 @@ const $=id=>document.getElementById(id);
 function esc(x){return String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 function money(n){return Number(n||0).toLocaleString('ar-EG',{maximumFractionDigits:2})}
 function toast(t){const x=$('toast');if(!x)return;x.textContent=t;x.classList.add('show');clearTimeout(window._toast);window._toast=setTimeout(()=>x.classList.remove('show'),3000)}
-function openModal(id){$(id).hidden=false} function closeModal(id){$(id).hidden=true}
+function openModal(id){
+  const el=$(id); if(!el)return;
+  el.hidden=false;
+  el.setAttribute('aria-hidden','false');
+  document.body.classList.add('modal-open');
+}
+function closeModal(id){
+  const el=$(id); if(!el)return;
+  el.hidden=true;
+  el.setAttribute('aria-hidden','true');
+  if(!document.querySelector('.modal:not([hidden])')) document.body.classList.remove('modal-open');
+}
+function closeSearch(){ closeModal('searchModal'); }
+
 function saveLocal(){localStorage.setItem('fartaka_cart',JSON.stringify(cart));localStorage.setItem('fartaka_favorites',JSON.stringify([...favorites]))}
 async function init(){
   $('categoriesGrid').innerHTML=cats.slice(1).map(c=>`<button class="category" onclick="filterCat('${esc(c[0])}')"><div class="ico">${c[1]}</div><b>${esc(c[0])}</b></button>`).join('');
   $('chips').innerHTML=cats.map(c=>`<button class="chip ${c[0]==='الكل'?'active':''}" onclick="filterCat('${esc(c[0])}')">${c[1]} ${esc(c[0])}</button>`).join('');
-  document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal').forEach(m=>m.hidden=true)});
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape') document.querySelectorAll('.modal:not([hidden])').forEach(m=>closeModal(m.id));
+  });
+  document.querySelectorAll('.modal').forEach(m=>{
+    m.addEventListener('click',e=>{ if(e.target===m) closeModal(m.id); });
+  });
+  document.querySelectorAll('.modal .close').forEach(btn=>{
+    btn.type='button';
+    btn.addEventListener('click',e=>{
+      e.preventDefault(); e.stopPropagation();
+      const modal=btn.closest('.modal');
+      if(modal) closeModal(modal.id);
+    });
+  });
   if(sb){const {data:{session}}=await sb.auth.getSession();if(session)await setUser(session.user);sb.auth.onAuthStateChange((_e,s)=>setUser(s?.user||null));}
   await loadSite();await loadProducts();updateCart();renderAccount();handlePaymentReturn();
 }
@@ -39,7 +65,10 @@ function buildStoreFilter(){const stores=[...new Set(products.map(p=>p.source).f
 function getList(){let list=activeCat==='الكل'?[...products]:products.filter(p=>p.cat===activeCat);const min=+$('minPrice').value||0,max=+$('maxPrice').value||Infinity,store=$('storeFilter').value,sale=$('saleOnly').checked;list=list.filter(p=>p.price>=min&&p.price<=max&&(!store||p.source===store)&&(!sale||p.old>p.price));const s=$('sort').value;if(s==='low')list.sort((a,b)=>a.price-b.price);if(s==='high')list.sort((a,b)=>b.price-a.price);if(s==='discount')list.sort((a,b)=>((b.old-b.price)/b.old)-((a.old-a.price)/a.old));return list}
 function renderProducts(){const list=getList(),grid=$('productsGrid');grid.innerHTML=list.slice(0,visibleCount).map(card).join('')||'<div class="empty">مفيش منتجات مطابقة للفلاتر.</div>';$('moreBtn').hidden=list.length<=visibleCount}
 function showMore(){visibleCount+=12;renderProducts()}
-function card(p){const visual=p.image?`<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy">`:p.emoji;const discount=p.old>p.price?Math.round((1-p.price/p.old)*100):0;const fav=favorites.has(p.id)?'♥':'♡';return `<article class="card"><button class="fav" onclick="toggleFav(${p.id})">${fav}</button><span class="source">${esc(p.source)}</span><button class="cardClick" onclick="openProduct(${p.id})"><div class="cardImg">${visual}</div><div class="cardBody"><small>${esc(p.cat)}</small><h3>${esc(p.name)}</h3><div class="rating">${p.rating?'★'.repeat(Math.min(5,Math.round(p.rating))):'☆'} <span>${p.reviews?`(${p.reviews})`:'جديد'}</span></div>${discount?`<span class="discount">خصم ${discount}%</span>`:''}<div class="price">${money(p.price)} ج ${p.old>p.price?`<span class="old">${money(p.old)} ج</span>`:''}</div></div></button><div class="cardActions"><button class="add" onclick="addToCart(${p.id})">🛒 للسلة</button><button class="buy" onclick="addToCart(${p.id});openCart()">شراء</button></div></article>`}
+function safeAffiliate(url){try{const u=new URL(url);return ['http:','https:'].includes(u.protocol)?u.href:'#'}catch{return '#'}}
+function affiliateButton(p,cls='btn ghost'){const url=safeAffiliate(p.url);return url==='#'?'<button class="btn ghost" disabled>رابط الشراء غير متاح</button>':`<a class="${cls}" href="${esc(url)}" target="_blank" rel="nofollow sponsored noopener" onclick="trackAffiliateClick(${p.id})">شراء من المتجر الأصلي ↗</a>`}
+async function trackAffiliateClick(id){if(sb&&currentUser){await sb.from('affiliate_clicks').insert({user_id:currentUser.id,product_id:id}).catch(()=>{})}}
+function card(p){const visual=p.image?`<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy">`:p.emoji;const discount=p.old>p.price?Math.round((1-p.price/p.old)*100):0;const fav=favorites.has(p.id)?'♥':'♡';return `<article class="card"><button class="fav" onclick="toggleFav(${p.id})">${fav}</button><span class="source">${esc(p.source)}</span><button class="cardClick" onclick="openProduct(${p.id})"><div class="cardImg">${visual}</div><div class="cardBody"><small>${esc(p.cat)}</small><h3>${esc(p.name)}</h3><div class="rating">${p.rating?'★'.repeat(Math.min(5,Math.round(p.rating))):'☆'} <span>${p.reviews?`(${p.reviews})`:'جديد'}</span></div>${discount?`<span class="discount">خصم ${discount}%</span>`:''}<div class="price">${money(p.price)} ج ${p.old>p.price?`<span class="old">${money(p.old)} ج</span>`:''}</div></div></button><div class="cardActions"><button class="add" onclick="addToCart(${p.id})">🛒 للسلة</button>${affiliateButton(p,'buy')}</div></article>`}
 function filterCat(cat){activeCat=cat;visibleCount=12;document.querySelectorAll('.chip').forEach(x=>x.classList.toggle('active',x.textContent.includes(cat)));renderProducts();$('products').scrollIntoView({behavior:'smooth'})}
 function toggleFilters(){$('filters').hidden=!$('filters').hidden}
 function toggleFav(id){if(!currentUser){toast('سجّل الدخول عشان تحفظ المفضلة');openAccount();return}favorites.has(id)?favorites.delete(id):favorites.add(id);saveLocal();renderProducts();if(sb)sb.from('favorites').upsert({user_id:currentUser.id,product_id:id}).then(()=>{});toast(favorites.has(id)?'تمت الإضافة للمفضلة':'تمت الإزالة من المفضلة')}
@@ -49,9 +78,9 @@ function changeQty(id,d){const x=cart.find(p=>p.id===id);if(!x)return;x.qty=Math
 function subtotal(){return cart.reduce((s,p)=>s+p.price*(p.qty||1),0)}
 function updateCart(){const count=cart.reduce((s,p)=>s+(p.qty||1),0);$('count').textContent=count;$('cartItems').innerHTML=cart.length?cart.map(p=>`<div class="cartRow"><div class="cartThumb">${p.image?`<img src="${esc(p.image)}">`:'🛍️'}</div><div class="cartInfo"><b>${esc(p.name)}</b><small>${money(p.price)} ج</small><div class="qty"><button onclick="changeQty(${p.id},-1)">−</button><b>${p.qty||1}</b><button onclick="changeQty(${p.id},1)">+</button></div></div><button class="remove" onclick="removeCart(${p.id})">×</button></div>`).join(''):'<div class="empty">السلة فاضية. اختار منتج وابدأ التسوق.</div>';let total=subtotal();if(coupon?.percent)total*=1-coupon.percent/100;$('total').textContent=money(total)}
 function openCart(){$('cartDrawer').classList.add('open');$('overlay').classList.add('show');updateCart()}function closeCart(){$('cartDrawer').classList.remove('open');$('overlay').classList.remove('show')}
-function openSearch(){$('searchModal').hidden=false;$('searchInput').focus();searchProducts()}function closeSearch(){$('searchModal').hidden=true}function searchProducts(){const q=$('searchInput').value.trim().toLowerCase();const list=products.filter(p=>(p.name+' '+p.cat+' '+p.source).toLowerCase().includes(q));$('searchResults').innerHTML=list.slice(0,20).map(p=>`<div class="result"><div><b>${esc(p.name)}</b><small>${esc(p.source)} • ${money(p.price)} ج</small></div><button class="btn" onclick="closeSearch();openProduct(${p.id})">عرض</button></div>`).join('')||'<div class="empty">مفيش نتائج مطابقة.</div>'}
+function openSearch(){openModal('searchModal');setTimeout(()=>{$('searchInput')?.focus()},0);searchProducts()}function searchProducts(){const q=$('searchInput').value.trim().toLowerCase();const list=products.filter(p=>(p.name+' '+p.cat+' '+p.source).toLowerCase().includes(q));$('searchResults').innerHTML=list.slice(0,20).map(p=>`<div class="result"><div><b>${esc(p.name)}</b><small>${esc(p.source)} • ${money(p.price)} ج</small></div><button class="btn" onclick="closeSearch();openProduct(${p.id})">عرض</button></div>`).join('')||'<div class="empty">مفيش نتائج مطابقة.</div>'}
 function quickSearch(){const q=$('topSearch').value.trim();if(q.length>=2){$('searchInput').value=q;openSearch()}}
-function openProduct(id){const p=products.find(x=>x.id===id);if(!p)return;const discount=p.old>p.price?Math.round((1-p.price/p.old)*100):0;$('productDetail').innerHTML=`<div class="productDetail"><div class="detailImage">${p.image?`<img src="${esc(p.image)}" alt="${esc(p.name)}">`:'🛍️'}</div><div class="detailInfo"><span class="source inline">${esc(p.source)}</span><small>${esc(p.cat)}</small><h2>${esc(p.name)}</h2><div class="rating big">${p.rating?'★'.repeat(Math.min(5,Math.round(p.rating))):'☆'} <span>${p.reviews?`${p.reviews} تقييم`:'لا توجد تقييمات بعد'}</span></div><p>${esc(p.description||'منتج مميز متاح للطلب من خلال فرتكه.')}</p><div class="detailPrice">${money(p.price)} ج ${discount?`<del>${money(p.old)} ج</del><em>خصم ${discount}%</em>`:''}</div><div class="detailActions"><button class="btn primary" onclick="addToCart(${p.id});closeModal('productModal');openCart()">أضف للسلة</button><button class="btn ghost" onclick="toggleFav(${p.id})">${favorites.has(p.id)?'♥ في المفضلة':'♡ أضف للمفضلة'}</button></div><small class="safe">🔒 الدفع بالبطاقة يتم عبر بوابة دفع آمنة، ولا نخزن بيانات البطاقة على الموقع.</small></div></div>`;openModal('productModal')}
+function openProduct(id){const p=products.find(x=>x.id===id);if(!p)return;const discount=p.old>p.price?Math.round((1-p.price/p.old)*100):0;$('productDetail').innerHTML=`<div class="productDetail"><div class="detailImage">${p.image?`<img src="${esc(p.image)}" alt="${esc(p.name)}">`:'🛍️'}</div><div class="detailInfo"><span class="source inline">${esc(p.source)}</span><small>${esc(p.cat)}</small><h2>${esc(p.name)}</h2><div class="rating big">${p.rating?'★'.repeat(Math.min(5,Math.round(p.rating))):'☆'} <span>${p.reviews?`${p.reviews} تقييم`:'لا توجد تقييمات بعد'}</span></div><p>${esc(p.description||'منتج مميز متاح للطلب من خلال فرتكه.')}</p><div class="detailPrice">${money(p.price)} ج ${discount?`<del>${money(p.old)} ج</del><em>خصم ${discount}%</em>`:''}</div><div class="detailActions"><button class="btn primary" onclick="addToCart(${p.id});closeModal('productModal');openCart()">أضف للسلة</button>${affiliateButton(p,'btn ghost')}<button class="btn ghost" onclick="toggleFav(${p.id})">${favorites.has(p.id)?'♥ في المفضلة':'♡ أضف للمفضلة'}</button></div><small class="safe">🔒 الدفع بالبطاقة يتم عبر بوابة دفع آمنة، ولا نخزن بيانات البطاقة على الموقع.</small></div></div>`;openModal('productModal')}
 function openAccount(){renderAccountView();openModal('accountModal')}
 function renderAccount(){const a=document.querySelector('.actions button');if(a)a.title=currentUser?`حساب ${currentUser.email}`:'تسجيل الدخول';$('adminBtn').hidden=!isAdmin}
 function renderAccountView(){if(!currentUser){$('accountView').innerHTML=`<h2>حسابك في فرتكه</h2><p>سجّل دخولك عشان تقدر تعمل طلبات وتحفظ المفضلة وتتابع الشحنات.</p><form id="authForm"><div class="authSwitch"><button type="button" id="loginMode" class="active">تسجيل الدخول</button><button type="button" id="registerMode">إنشاء حساب</button></div><input id="authName" placeholder="الاسم" hidden><input id="authEmail" type="email" placeholder="البريد الإلكتروني" required><input id="authPassword" type="password" minlength="6" placeholder="كلمة المرور (6 أحرف على الأقل)" required><button class="btn primary fullBtn">متابعة</button></form><button class="linkBtn" onclick="forgotPassword()">نسيت كلمة المرور؟</button>`;bindAuthModes();return}$('accountView').innerHTML=`<div class="accountHead"><div class="avatar">👤</div><div><h2>أهلًا بيك</h2><p>${esc(currentUser.email)}</p></div></div><div class="accountCards"><button onclick="myOrders()">📦<b>طلباتي</b><small>تتبع كل طلباتك</small></button><button onclick="myFavorites()">❤️<b>المفضلة</b><small>${favorites.size} منتج</small></button><button onclick="profileForm()">⚙️<b>بياناتي</b><small>العنوان والهاتف</small></button></div><button class="btn ghost fullBtn" onclick="signOut()">تسجيل الخروج</button>`}
